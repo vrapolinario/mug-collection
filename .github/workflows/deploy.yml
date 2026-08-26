@@ -2,6 +2,12 @@ name: Deploy production
 
 on:
   workflow_dispatch:
+    inputs:
+      location:
+        description: Azure region for application resources
+        required: true
+        default: westus2
+        type: string
 
 permissions:
   contents: read
@@ -18,6 +24,7 @@ jobs:
     environment: production
     env:
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_LOCATION: ${{ inputs.location }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

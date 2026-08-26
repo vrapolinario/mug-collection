@@ -6,7 +6,7 @@ targetScope = 'resourceGroup'
 param environmentName string = 'prod'
 
 @description('Azure region for the application resources.')
-param location string = 'westus2'
+param location string
 
 @description('Short workload name used in resource names.')
 @minLength(3)

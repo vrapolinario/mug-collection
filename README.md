@@ -87,7 +87,7 @@ Pull requests run the same application and infrastructure checks in `.github/wor
 
 ## Azure and GitHub setup
 
-The production template targets `westus2`. Before the first deployment:
+The production workflow accepts the Azure region at deployment time and suggests `westus2` by default. Before the first deployment:
 
 1. Create the target resource group.
 2. Create a Microsoft Entra application and service principal for GitHub Actions.

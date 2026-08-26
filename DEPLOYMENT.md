@@ -29,7 +29,7 @@ $GitHubOwner = '<github-owner>'
 $GitHubRepo = 'mug-collection'
 $SubscriptionId = '<azure-subscription-id>'
 $ResourceGroup = 'rg-mug-collection-prod'
-$Location = 'westus2'
+$Location = 'westus2' # Change this to another supported Azure region if needed.
 $AppDisplayName = "github-$GitHubRepo-production"
 $RepositoryRoot = 'C:\GitHub\mug-collection'
 ```
@@ -164,6 +164,8 @@ az bicep build-params `
 Preview the Azure changes. `what-if` does not deploy the resources:
 
 ```powershell
+$env:AZURE_LOCATION = $Location
+
 az deployment group what-if `
   --name mug-collection-preview `
   --resource-group $ResourceGroup `
@@ -207,13 +209,13 @@ Future changes should go through a branch and pull request rather than direct pu
 The following actions create billable Azure resources:
 
 1. Open **Actions > Deploy production**.
-2. Select **Run workflow** and choose `main`.
+2. Select **Run workflow**, choose `main`, and enter the Azure region in **Azure region for application resources**.
 3. Wait for the `production` environment approval request.
 4. Have the configured reviewer inspect the commit and the earlier `what-if` result.
 5. The reviewer selects **Review deployments > Approve and deploy**.
 6. Wait for infrastructure, API, and frontend deployment steps to finish.
 
-The workflow deploys Bicep first, packages the Flex Function App, and uploads the already-built frontend. It does not persist credentials or deployment data in the repository.
+The workflow passes the selected region to Bicep through `AZURE_LOCATION`, deploys Bicep first, packages the Flex Function App, and uploads the already-built frontend. It does not persist credentials or deployment data in the repository. Confirm that the selected region supports Static Web Apps Standard, Functions Flex Consumption, Azure Maps Gen2, and the other template resources before approval.
 
 ## 11. Find the site URL
 

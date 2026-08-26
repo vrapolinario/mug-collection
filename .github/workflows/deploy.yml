@@ -8,6 +8,11 @@ on:
         required: true
         default: westus2
         type: string
+      confirm_deployment:
+        description: I reviewed this revision and approve deployment to production
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -20,6 +25,7 @@ concurrency:
 jobs:
   deploy:
     name: Deploy
+    if: ${{ inputs.confirm_deployment }}
     runs-on: ubuntu-latest
     environment: production
     env:

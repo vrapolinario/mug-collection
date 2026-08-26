@@ -91,9 +91,9 @@ The production workflow accepts the Azure region at deployment time and suggests
 
 1. Create the target resource group.
 2. Create a Microsoft Entra application and service principal for GitHub Actions.
-3. Add a federated credential whose subject is `repo:OWNER/REPOSITORY:environment:production`.
+3. Add a federated credential whose subject exactly matches GitHub's OIDC token. Newly created repositories use `repo:OWNER@OWNER-ID/REPOSITORY@REPOSITORY-ID:environment:production`; repositories created before July 15, 2026 may still use the legacy name-only format. [DEPLOYMENT.md](DEPLOYMENT.md) derives the immutable IDs with GitHub CLI.
 4. Grant the service principal `Contributor` and `Role Based Access Control Administrator` on the target resource group. The second role is required because the Bicep template creates managed-identity role assignments.
-5. Create a protected GitHub environment named `production` and add required reviewers. This approval gate must be configured before enabling production deployment.
+5. Create a GitHub environment named `production` and restrict it to `main`. For single-owner repositories, manual dispatch plus the workflow confirmation checkbox is the approval. Teams can optionally configure required reviewers when their GitHub plan supports that feature.
 6. Add these non-secret variables to that environment:
 
 | Variable | Value |
@@ -107,7 +107,7 @@ No Azure client secret or persistent SWA deployment token is used. After OIDC lo
 
 ## Deploy
 
-`.github/workflows/deploy.yml` runs only when manually dispatched from the `main` branch. Its `production` environment then pauses for the separately configured reviewer approval. It:
+`.github/workflows/deploy.yml` runs only when manually dispatched from the `main` branch and its production confirmation checkbox is selected. If the `production` environment has required reviewers, it also pauses for their approval. It:
 
 1. Builds and tests the frontend and API.
 2. Deploys `infra/main.bicep` with `infra/main.prod.bicepparam`.

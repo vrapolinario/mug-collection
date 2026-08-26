@@ -174,6 +174,10 @@ module functionApp 'br:mcr.microsoft.com/bicep/avm/res/web/site:0.24.0' = {
         maximumInstanceCount: 20
       }
     }
+    siteConfig: {
+      minTlsVersion: '1.2'
+      ftpsState: 'Disabled'
+    }
     configs: [
       {
         name: 'appsettings'

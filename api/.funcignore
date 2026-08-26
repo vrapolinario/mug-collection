@@ -1,0 +1,9 @@
+*.js.map
+.git*
+local.settings.json
+test
+node_modules
+coverage
+__azurite_db*__.json
+__blobstorage__
+__queuestorage__

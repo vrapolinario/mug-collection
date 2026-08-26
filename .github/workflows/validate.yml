@@ -1,0 +1,46 @@
+name: Validate
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  application:
+    name: Application
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Lint frontend
+        run: npm run lint
+      - name: Build frontend
+        run: npm run build
+      - name: Install API dependencies
+        working-directory: api
+        run: npm ci
+      - name: Test API
+        working-directory: api
+        run: npm test
+
+  infrastructure:
+    name: Infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bicep
+        run: az bicep install
+      - name: Build template
+        run: az bicep build --file infra/main.bicep --outfile "${RUNNER_TEMP}/main.json"
+      - name: Build production parameters
+        run: az bicep build-params --file infra/main.prod.bicepparam --outfile "${RUNNER_TEMP}/main.parameters.json"

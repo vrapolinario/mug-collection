@@ -16,6 +16,8 @@ For first-time production setup and release instructions, see [DEPLOYMENT.md](DE
 - Application Insights backed by Log Analytics
 - GitHub Actions deployment authenticated to Azure with OIDC
 
+![V&M Coffee Mug Collection architecture](docs/architecture.svg)
+
 Storage shared keys, public blob access, and Azure Maps local authentication are disabled. The Function App uses a user-assigned managed identity for Blob, Table, Queue, and Maps data access. The linked Function App is the Static Web App API backend.
 
 ## Local development

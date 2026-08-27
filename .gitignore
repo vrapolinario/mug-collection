@@ -21,6 +21,9 @@ __azurite_db*__.json
 __blobstorage__/
 __queuestorage__/
 
+# Local editable diagram sources
+*.excalidraw
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

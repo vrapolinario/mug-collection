@@ -356,19 +356,27 @@ if ($AdminEmail -match '^<.*>$' -or $AdminEmail -notmatch '^[^@\s]+@[^@\s]+\.[^@
 
 $Now = (Get-Date).ToUniversalTime().ToString('o')
 
-az storage entity insert `
-  --account-name $StorageAccountName `
-  --table-name Admins `
-  --auth-mode login `
-  --entity "PartitionKey=admin" "RowKey=$AdminEmail" "email=$AdminEmail" "addedAt=$Now" "addedBy=bootstrap" `
-  --if-exists replace
+$InsertArguments = @(
+  'storage', 'entity', 'insert'
+  '--account-name', $StorageAccountName
+  '--table-name', 'Admins'
+  '--auth-mode', 'login'
+  '--entity', 'PartitionKey=admin', "RowKey=$AdminEmail", "email=$AdminEmail", "addedAt=$Now", 'addedBy=bootstrap'
+  '--if-exists', 'replace'
+)
+& az @InsertArguments
+if ($LASTEXITCODE -ne 0) { throw 'The administrator entity could not be stored.' }
 
-$AdminEntity = az storage entity show `
-  --account-name $StorageAccountName `
-  --table-name Admins `
-  --auth-mode login `
-  --partition-key admin `
-  --row-key $AdminEmail | ConvertFrom-Json
+$ShowArguments = @(
+  'storage', 'entity', 'show'
+  '--account-name', $StorageAccountName
+  '--table-name', 'Admins'
+  '--auth-mode', 'login'
+  '--partition-key', 'admin'
+  '--row-key', $AdminEmail
+)
+$AdminEntity = & az @ShowArguments | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw 'The administrator entity could not be read back.' }
 
 if ($AdminEntity.email -cne $AdminEmail) {
   throw 'The administrator entity was not stored with the expected email.'

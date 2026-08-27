@@ -134,13 +134,27 @@ $storageAccount = az storage account list `
   --output tsv
 
 $email = '<microsoft-account-email>'.Trim().ToLowerInvariant()
+if ($email -match '^<.*>$' -or $email -notmatch '^[^@\s]+@[^@\s]+\.[^@\s]+$') {
+  throw 'Set $email to the Microsoft account email used to sign in to the site.'
+}
+
 $now = (Get-Date).ToUniversalTime().ToString('o')
 
 az storage entity insert `
   --account-name $storageAccount `
   --table-name Admins `
   --auth-mode login `
-  --entity PartitionKey=admin RowKey=$email email=$email addedAt=$now addedBy=bootstrap
+  --entity "PartitionKey=admin" "RowKey=$email" "email=$email" "addedAt=$now" "addedBy=bootstrap" `
+  --if-exists replace
+
+az storage entity show `
+  --account-name $storageAccount `
+  --table-name Admins `
+  --auth-mode login `
+  --partition-key admin `
+  --row-key $email `
+  --query '{email:email,addedAt:addedAt,addedBy:addedBy}' `
+  --output table
 ```
 
 Sign in from the site with **Admin sign in**. Once authorized, that account can manage additional administrators in the application. The last administrator cannot be removed.

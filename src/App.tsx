@@ -100,6 +100,7 @@ function App() {
   const [typeFilter, setTypeFilter] = useState<MugType | 'All'>('All')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [sessionError, setSessionError] = useState('')
   const [editingMug, setEditingMug] = useState<Mug | null | undefined>(undefined)
 
   async function loadMugs() {
@@ -115,7 +116,10 @@ function App() {
       .then(({ items }: { items: Mug[] }) => setMugs(items))
       .catch((error: unknown) => setLoadError(error instanceof Error ? error.message : 'The collection is temporarily unavailable.'))
       .finally(() => setLoading(false))
-    void fetch('/api/admin/session').then((response) => response.ok ? response.json() : { authenticated: false, authorized: false }).then(setSession)
+    void fetch('/api/management/session', { cache: 'no-store' })
+      .then((response) => { if (!response.ok) throw new Error(`Admin session check failed (${response.status}).`); return response.json() })
+      .then(setSession)
+      .catch((error: unknown) => setSessionError(error instanceof Error ? error.message : 'Admin session check failed.'))
   }, [])
   const filteredMugs = useMemo(() => { const term = query.trim().toLowerCase(); return mugs.filter((mug) => (typeFilter === 'All' || mug.type === typeFilter) && (!term || [mug.title, mug.type, mug.locationName, mug.additionalInfo].filter(Boolean).some((value) => value!.toLowerCase().includes(term)))) }, [mugs, query, typeFilter])
   const counts = useMemo(() => mugTypes.map((type) => ({ type, count: mugs.filter((mug) => mug.type === type).length })), [mugs])
@@ -128,7 +132,7 @@ function App() {
     <section className="collection-band" id="collection" aria-labelledby="collection-heading"><div className="section-heading"><div><p className="eyebrow">The cabinet</p><h2 id="collection-heading">The collection</h2></div><p>{filteredMugs.length} of {mugs.length} mugs</p></div><div className="collection-tools"><label className="search-box"><Search size={18} /><span className="sr-only">Search collection</span><input type="search" placeholder="Search mugs or places" value={query} onChange={(event) => setQuery(event.target.value)} /></label><label className="select-box"><Filter size={17} /><span className="sr-only">Filter by type</span><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as MugType | 'All')}><option>All</option>{mugTypes.map((type) => <option key={type}>{type}</option>)}</select></label></div>
     {loading && <div className="status-panel">Opening the cabinet...</div>}{loadError && <div className="status-panel error" role="alert">{loadError}<button className="text-link" onClick={() => void loadMugs()}>Try again</button></div>}{!loading && !loadError && filteredMugs.length === 0 && <div className="status-panel"><Coffee size={32} /><h3>{mugs.length ? 'No mugs match these filters.' : 'The first mug is waiting.'}</h3><p>{session.authorized ? 'Use Add mug to start the collection.' : 'Check back after the collection has been catalogued.'}</p></div>}
     <div className="mug-grid">{filteredMugs.map((mug) => <article className="mug-card" key={mug.id}><div className="mug-image"><img src={mug.primaryImageUrl} alt={`${mug.title} coffee mug`} loading="lazy" /></div><div className="mug-card-body"><div className="mug-meta"><span>{mug.type}</span><span>{mug.series}</span></div><h3>{mug.title}</h3>{mug.locationName && <p><MapPin size={15} /> {mug.locationName}</p>}{session.authorized && <div className="card-actions"><button className="icon-button" type="button" title={`Edit ${mug.title}`} onClick={() => setEditingMug(mug)}><Edit3 /></button><button className="icon-button danger" type="button" title={`Delete ${mug.title}`} onClick={() => void deleteMug(mug)}><Trash2 /></button></div>}</div></article>)}</div></section></main>
-    <footer><div className="brand"><span className="brand-mark"><Coffee /></span><span><strong>V&amp;M</strong><small>Coffee Mug Collection</small></span></div><p>This is an independent, unofficial collector site. It is not affiliated with or endorsed by any coffee company or trademark owner.</p>{session.authenticated && !session.authorized && <p className="access-note"><ShieldCheck size={16} /> Signed in as {session.email}. This account is not an administrator.</p>}</footer>
+    <footer><div className="brand"><span className="brand-mark"><Coffee /></span><span><strong>V&amp;M</strong><small>Coffee Mug Collection</small></span></div><p>This is an independent, unofficial collector site. It is not affiliated with or endorsed by any coffee company or trademark owner.</p>{sessionError ? <p className="access-note form-error" role="alert">{sessionError}</p> : session.authenticated && !session.authorized && <p className="access-note"><ShieldCheck size={16} /> Signed in as {session.email}. This account is not an administrator.</p>}</footer>
     {editingMug !== undefined && <MugForm mug={editingMug ?? undefined} onClose={() => setEditingMug(undefined)} onSaved={() => void loadMugs()} />}</div>
 }
 

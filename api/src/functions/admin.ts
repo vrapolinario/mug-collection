@@ -5,7 +5,10 @@ import { addAdmin, isAdmin, listAdmins, removeAdmin } from '../repositories'
 
 async function session(request: HttpRequest): Promise<HttpResponseInit> {
   const email = getUserEmail(request)
-  return json({ authenticated: Boolean(email), authorized: email ? await isAdmin(email) : false, ...(email && { email }) })
+  return {
+    ...json({ authenticated: Boolean(email), authorized: email ? await isAdmin(email) : false, ...(email && { email }) }),
+    headers: { 'cache-control': 'no-store' },
+  }
 }
 
 async function getAdmins(request: HttpRequest): Promise<HttpResponseInit> {
@@ -28,7 +31,7 @@ async function deleteAdmin(request: HttpRequest): Promise<HttpResponseInit> {
   catch (error) { return errorResponse(error instanceof Error && error.message.includes('last administrator') ? new HttpError(409, error.message) : error) }
 }
 
-app.http('adminSession', { methods: ['GET'], route: 'admin/session', authLevel: 'anonymous', handler: session })
-app.http('listAdmins', { methods: ['GET'], route: 'admins', authLevel: 'anonymous', handler: getAdmins })
-app.http('createAdmin', { methods: ['POST'], route: 'admins', authLevel: 'anonymous', handler: createAdmin })
-app.http('deleteAdmin', { methods: ['DELETE'], route: 'admins/{email}', authLevel: 'anonymous', handler: deleteAdmin })
+app.http('adminSession', { methods: ['GET'], route: 'management/session', authLevel: 'anonymous', handler: session })
+app.http('listAdmins', { methods: ['GET'], route: 'management/admins', authLevel: 'anonymous', handler: getAdmins })
+app.http('createAdmin', { methods: ['POST'], route: 'management/admins', authLevel: 'anonymous', handler: createAdmin })
+app.http('deleteAdmin', { methods: ['DELETE'], route: 'management/admins/{email}', authLevel: 'anonymous', handler: deleteAdmin })

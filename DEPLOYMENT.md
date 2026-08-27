@@ -350,13 +350,40 @@ Role assignments can take several minutes to propagate. Then insert the Microsof
 
 ```powershell
 $AdminEmail = '<microsoft-account-email>'.Trim().ToLowerInvariant()
+if ($AdminEmail -match '^<.*>$' -or $AdminEmail -notmatch '^[^@\s]+@[^@\s]+\.[^@\s]+$') {
+  throw 'Set $AdminEmail to the Microsoft account email used to sign in to the site.'
+}
+
 $Now = (Get-Date).ToUniversalTime().ToString('o')
 
 az storage entity insert `
   --account-name $StorageAccountName `
   --table-name Admins `
   --auth-mode login `
-  --entity PartitionKey=admin RowKey=$AdminEmail email=$AdminEmail addedAt=$Now addedBy=bootstrap
+  --entity "PartitionKey=admin" "RowKey=$AdminEmail" "email=$AdminEmail" "addedAt=$Now" "addedBy=bootstrap" `
+  --if-exists replace
+
+$AdminEntity = az storage entity show `
+  --account-name $StorageAccountName `
+  --table-name Admins `
+  --auth-mode login `
+  --partition-key admin `
+  --row-key $AdminEmail | ConvertFrom-Json
+
+if ($AdminEntity.email -cne $AdminEmail) {
+  throw 'The administrator entity was not stored with the expected email.'
+}
+```
+
+If an earlier attempt ran with `$AdminEmail` unset, it may have created an empty administrator entity. After the valid entity above is verified, remove only that malformed row:
+
+```powershell
+az storage entity delete `
+  --account-name $StorageAccountName `
+  --table-name Admins `
+  --auth-mode login `
+  --partition-key admin `
+  --row-key=
 ```
 
 After the insert succeeds, remove your temporary data-plane role:
@@ -367,6 +394,19 @@ az role assignment delete `
   --role 'Storage Table Data Contributor' `
   --scope $StorageAccountId
 ```
+
+### Troubleshoot administrator sign-in
+
+After signing in, open `https://<static-web-app-hostname>/.auth/me` in the same browser. `clientPrincipal` must not be `null`; its `userDetails` value identifies the Microsoft account known to Static Web Apps.
+
+Open the browser developer tools, select **Network**, reload the site, and inspect `GET /api/management/session`. The expected status is `200` with an `authenticated`, `authorized`, and `email` result:
+
+- `authenticated: false` means the API did not receive a Static Web Apps identity.
+- `authenticated: true` and `authorized: false` means the returned `email` does not exactly match a normalized `Admins` row key.
+- `404` means the frontend or API is from an older deployment that still uses the `/api/admin*` path, which this linked backend does not forward.
+- `500` means the Function reached an application or Storage error. Query Application Insights using the request's approximate time.
+
+The frontend also displays session-check failures in the page footer. Do not share the complete `/.auth/me` response publicly because it contains identity details.
 
 ## 13. Smoke-test production
 

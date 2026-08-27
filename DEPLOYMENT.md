@@ -282,6 +282,25 @@ The following actions create billable Azure resources:
 
 The workflow does nothing unless the confirmation checkbox is selected. After approval, it passes the selected region to Bicep through `AZURE_LOCATION`, deploys Bicep first, packages the Flex Function App, and uploads the already-built frontend. It does not persist credentials or deployment data in the repository. Confirm that the selected region supports Static Web Apps Standard, Functions Flex Consumption, Azure Maps Gen2, and the other template resources before approval.
 
+The storage public endpoint remains network-reachable because the Flex Consumption deployment service must upload and validate the API package in the `function-releases` container. This does not make storage content public: blob anonymous access and shared-key authentication are disabled, containers are private, and data operations require Microsoft Entra roles. The API upload retries briefly because a newly created managed-identity role assignment can take time to propagate.
+
+If **Deploy API** reports `InaccessibleStorageException` with status `403`, verify both controls before retrying:
+
+```powershell
+$StorageAccountName = az storage account list `
+  --resource-group $ResourceGroup `
+  --query "[?starts_with(name, 'mugcollectionprod')].name | [0]" `
+  --output tsv
+
+az storage account show `
+  --resource-group $ResourceGroup `
+  --name $StorageAccountName `
+  --query '{PublicNetworkAccess:publicNetworkAccess,DefaultAction:networkRuleSet.defaultAction,SharedKeyAccess:allowSharedKeyAccess}' `
+  --output table
+```
+
+The expected values are `Enabled`, `Allow`, and `False`. If those values are correct, confirm the `mugcollection-prod-runtime` identity has `Storage Blob Data Owner` on the storage account. Do not enable shared-key access or make the container public to resolve this error.
+
 ## 11. Find the site URL
 
 After the workflow succeeds:

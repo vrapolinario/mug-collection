@@ -88,12 +88,28 @@ jobs:
           echo "static_web_app_name=$static_web_app_name" >> "$GITHUB_OUTPUT"
 
       - name: Deploy API
+        shell: bash
         run: |
-          az functionapp deployment source config-zip \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --name "${{ steps.infrastructure.outputs.function_name }}" \
-            --src "${RUNNER_TEMP}/api.zip" \
-            --only-show-errors
+          max_attempts=6
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            if az functionapp deployment source config-zip \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --name "${{ steps.infrastructure.outputs.function_name }}" \
+              --src "${RUNNER_TEMP}/api.zip" \
+              --only-show-errors; then
+              exit 0
+            fi
+
+            if [[ "$attempt" -eq "$max_attempts" ]]; then
+              echo "::error::API package deployment failed after $max_attempts attempts."
+              exit 1
+            fi
+
+            delay=$((attempt * 15))
+            echo "API package deployment attempt $attempt failed; retrying in ${delay}s while Azure role assignments propagate."
+            sleep "$delay"
+          done
 
       - name: Get ephemeral SWA upload token
         id: swa

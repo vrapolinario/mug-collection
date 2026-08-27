@@ -67,6 +67,10 @@ module storage 'br:mcr.microsoft.com/bicep/avm/res/storage/storage-account:0.33.
     defaultToOAuthAuthentication: true
     minimumTlsVersion: 'TLS1_2'
     publicNetworkAccess: 'Enabled'
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+    }
     blobServices: {
       containers: [
         {

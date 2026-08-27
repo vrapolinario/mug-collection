@@ -4,6 +4,8 @@ import { requireAdmin } from '../auth'
 import { errorResponse, HttpError, json } from '../http'
 import { credential } from '../storage'
 
+const mapsLanguage = 'en-US'
+
 const geocodingResponseSchema = z.object({
   features: z.array(z.object({
     geometry: z.object({ coordinates: z.array(z.number()).min(2) }),
@@ -37,6 +39,7 @@ async function geocode(request: HttpRequest): Promise<HttpResponseInit> {
     url.search = new URLSearchParams({ 'api-version': '2025-01-01', query, top: '5' }).toString()
     const response = await fetch(url, {
       headers: {
+        'accept-language': mapsLanguage,
         authorization: `Bearer ${await mapsToken()}`,
         'x-ms-client-id': requireMapsClientId(),
       },
@@ -65,7 +68,7 @@ async function tile(request: HttpRequest): Promise<HttpResponseInit> {
     const { z, x, y } = request.params
     if (![z, x, y].every((value) => /^\d+$/.test(value))) throw new HttpError(400, 'Invalid tile coordinates.')
     const url = new URL('https://atlas.microsoft.com/map/tile')
-    url.search = new URLSearchParams({ 'api-version': '2024-04-01', tilesetId: 'microsoft.base.road', zoom: z, x, y }).toString()
+    url.search = new URLSearchParams({ 'api-version': '2024-04-01', tilesetId: 'microsoft.base.road', zoom: z, x, y, language: mapsLanguage }).toString()
     const response = await fetch(url, { headers: { authorization: `Bearer ${await mapsToken()}`, 'x-ms-client-id': requireMapsClientId() } })
     if (!response.ok) throw new HttpError(response.status, 'Map tile is unavailable.')
     return { body: new Uint8Array(await response.arrayBuffer()), headers: { 'content-type': response.headers.get('content-type') ?? 'image/png', 'cache-control': 'public, max-age=86400', 'x-content-type-options': 'nosniff' } }

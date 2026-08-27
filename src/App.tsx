@@ -29,7 +29,7 @@ function CollectionMap({ mugs }: { mugs: Mug[] }) {
       zoom: 1.15,
       minZoom: 1,
       attributionControl: false,
-      style: { version: 8, sources: { streets: { type: 'raster', tileSize: 256, tiles: ['/api/maps/tiles/{z}/{x}/{y}'], attribution: 'Map data &copy; Microsoft' } }, layers: [{ id: 'streets', type: 'raster', source: 'streets' }] },
+      style: { version: 8, sources: { streets: { type: 'raster', tileSize: 256, tiles: ['/api/maps/tiles/{z}/{x}/{y}?language=en-US'], attribution: 'Map data &copy; Microsoft' } }, layers: [{ id: 'streets', type: 'raster', source: 'streets' }] },
     })
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
     map.addControl(new AttributionControl({ compact: true }))

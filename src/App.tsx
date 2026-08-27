@@ -11,6 +11,7 @@ type MugType = (typeof mugTypes)[number]
 type Mug = { id: string; title: string; type: MugType; series: number | 'N/A'; additionalInfo?: string; locationName?: string; latitude?: number; longitude?: number; primaryImageUrl: string; secondaryImageUrl?: string }
 type AdminSession = { authenticated: boolean; authorized: boolean; email?: string }
 type MugDraft = { title: string; type: MugType; series: string; additionalInfo: string; locationName: string; latitude: string; longitude: string }
+type GeocodeResult = { id: string; label: string; latitude: number; longitude: number; confidence?: string; type?: string }
 
 const emptyDraft: MugDraft = { title: '', type: 'City', series: '', additionalInfo: '', locationName: '', latitude: '', longitude: '' }
 
@@ -63,13 +64,57 @@ function MugForm({ mug, onClose, onSaved }: { mug?: Mug; onClose: () => void; on
   const [draft, setDraft] = useState<MugDraft>(() => mug ? { title: mug.title, type: mug.type, series: String(mug.series), additionalInfo: mug.additionalInfo ?? '', locationName: mug.locationName ?? '', latitude: mug.latitude?.toString() ?? '', longitude: mug.longitude?.toString() ?? '' } : emptyDraft)
   const [primaryImage, setPrimaryImage] = useState<File>()
   const [secondaryImage, setSecondaryImage] = useState<File>()
+  const [locationResults, setLocationResults] = useState<GeocodeResult[]>([])
+  const [resolvedLocation, setResolvedLocation] = useState(mug?.latitude !== undefined && mug.longitude !== undefined ? mug.locationName : undefined)
+  const [locating, setLocating] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const locationSearchVersion = useRef(0)
   const locationRequired = draft.type !== 'Film'
   const update = <K extends keyof MugDraft>(key: K, value: MugDraft[K]) => setDraft((current) => ({ ...current, [key]: value }))
 
+  function updateLocationName(value: string) {
+    locationSearchVersion.current += 1
+    setDraft((current) => ({ ...current, locationName: value, latitude: '', longitude: '' }))
+    setLocationResults([])
+    setResolvedLocation(undefined)
+    setError('')
+  }
+
+  async function findLocation() {
+    const query = draft.locationName.trim()
+    if (query.length < 2) { setError('Enter at least two characters to find a location.'); return }
+    const searchVersion = ++locationSearchVersion.current
+    setLocating(true); setLocationResults([]); setResolvedLocation(undefined); setError('')
+    try {
+      const response = await fetch(`/api/maps/geocode?query=${encodeURIComponent(query)}`, { cache: 'no-store' })
+      const body = await response.json() as { results?: GeocodeResult[]; message?: string }
+      if (!response.ok) throw new Error(body.message ?? 'Unable to search for this location.')
+      if (searchVersion !== locationSearchVersion.current) return
+      const results = body.results ?? []
+      setLocationResults(results)
+      if (!results.length) setError('No matching locations were found. Try adding a state, region, or country.')
+    } catch (locationError) {
+      if (searchVersion === locationSearchVersion.current) setError(locationError instanceof Error ? locationError.message : 'Unable to search for this location.')
+    } finally {
+      if (searchVersion === locationSearchVersion.current) setLocating(false)
+    }
+  }
+
+  function selectLocation(result: GeocodeResult) {
+    setDraft((current) => ({ ...current, latitude: String(result.latitude), longitude: String(result.longitude) }))
+    setResolvedLocation(result.label)
+    setLocationResults([])
+    setError('')
+  }
+
   async function submit(event: FormEvent) {
-    event.preventDefault(); setError(''); setSaving(true)
+    event.preventDefault(); setError('')
+    if ((locationRequired || draft.locationName.trim()) && (!draft.latitude || !draft.longitude)) {
+      setError('Find and select the matching location before saving.')
+      return
+    }
+    setSaving(true)
     const form = new FormData()
     Object.entries(draft).forEach(([key, value]) => form.append(key, value))
     if (primaryImage) form.append('primaryImage', primaryImage)
@@ -85,8 +130,9 @@ function MugForm({ mug, onClose, onSaved }: { mug?: Mug; onClose: () => void; on
   return <div className="dialog-backdrop" role="presentation" onMouseDown={onClose}><section className="dialog" role="dialog" aria-modal="true" aria-labelledby="mug-form-title" onMouseDown={(event) => event.stopPropagation()}><header className="dialog-header"><div><p className="eyebrow">Collection editor</p><h2 id="mug-form-title">{mug ? 'Edit mug' : 'Register a mug'}</h2></div><button className="icon-button" type="button" onClick={onClose} title="Close"><X /></button></header><form className="mug-form" onSubmit={submit}>
     <label>Title<input required maxLength={120} value={draft.title} onChange={(event) => update('title', event.target.value)} /></label>
     <div className="field-row"><label>Type<select value={draft.type} onChange={(event) => update('type', event.target.value as MugType)}>{mugTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>Series<input required pattern="(?:N/A|[0-9]{4})" placeholder="2025 or N/A" value={draft.series} onChange={(event) => update('series', event.target.value)} /></label></div>
-    <label>Location name {locationRequired && <span aria-hidden="true">*</span>}<input required={locationRequired} maxLength={160} value={draft.locationName} onChange={(event) => update('locationName', event.target.value)} /></label>
-    <div className="field-row"><label>Latitude<input required={locationRequired} type="number" min="-90" max="90" step="any" value={draft.latitude} onChange={(event) => update('latitude', event.target.value)} /></label><label>Longitude<input required={locationRequired} type="number" min="-180" max="180" step="any" value={draft.longitude} onChange={(event) => update('longitude', event.target.value)} /></label></div>
+    <div className="form-field"><label htmlFor="mug-location">Location name {locationRequired && <span aria-hidden="true">*</span>}</label><div className="location-search-control"><input id="mug-location" required={locationRequired} maxLength={160} placeholder="City, region, country, or landmark" value={draft.locationName} onChange={(event) => updateLocationName(event.target.value)} /><button className="button secondary" type="button" disabled={locating || draft.locationName.trim().length < 2} onClick={() => void findLocation()}><Search size={16} /> {locating ? 'Searching...' : 'Find location'}</button></div></div>
+    {locationResults.length > 0 && <div className="location-results" aria-live="polite"><strong>Select the matching location</strong>{locationResults.map((result) => <button key={result.id} type="button" onClick={() => selectLocation(result)}><MapPin size={17} /><span>{result.label}<small>{[result.type, result.confidence && `${result.confidence} confidence`].filter(Boolean).join(' · ')}</small></span></button>)}</div>}
+    {resolvedLocation && <div className="location-confirmation" role="status"><MapPin size={19} /><span><strong>Mapped to {resolvedLocation}</strong><small>{Number(draft.latitude).toFixed(5)}, {Number(draft.longitude).toFixed(5)}</small></span></div>}
     <label>Additional info<textarea maxLength={2000} rows={4} value={draft.additionalInfo} onChange={(event) => update('additionalInfo', event.target.value)} /></label>
     <div className="field-row"><label>Primary photo<input required={!mug} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPrimaryImage(event.target.files?.[0])} /></label><label>Second photo <span className="muted">optional</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setSecondaryImage(event.target.files?.[0])} /></label></div>
     {error && <p className="form-error" role="alert">{error}</p>}<footer className="dialog-actions"><button className="button secondary" type="button" onClick={onClose}>Cancel</button><button className="button primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save mug'}</button></footer>

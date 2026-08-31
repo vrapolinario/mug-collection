@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
-export const mugTypes = ['Country', 'State', 'City', 'Location', 'Film', 'Old Collection', 'Special'] as const
+export const mugTypes = ['Country', 'State', 'City', 'Places', 'Film', 'Old Collection', 'Special'] as const
+type MugType = (typeof mugTypes)[number]
 
 const optionalText = (maxLength: number) => z.string().trim().max(maxLength).transform((value) => value || undefined)
 const optionalCoordinate = (minimum: number, maximum: number) => z.union([
@@ -28,7 +29,7 @@ export type MugEntity = {
   partitionKey: 'mug'
   rowKey: string
   title: string
-  type: (typeof mugTypes)[number]
+  type: MugType | 'Location'
   series: string
   additionalInfo?: string
   locationName?: string
@@ -40,8 +41,9 @@ export type MugEntity = {
   updatedAt: string
 }
 
-export type PublicMug = Omit<MugEntity, 'partitionKey' | 'rowKey' | 'primaryImageName' | 'secondaryImageName' | 'createdAt' | 'updatedAt' | 'series'> & {
+export type PublicMug = Omit<MugEntity, 'partitionKey' | 'rowKey' | 'primaryImageName' | 'secondaryImageName' | 'createdAt' | 'updatedAt' | 'series' | 'type'> & {
   id: string
+  type: MugType
   series: number | 'N/A'
   primaryImageUrl: string
   secondaryImageUrl?: string
@@ -51,7 +53,7 @@ export function toPublicMug(entity: MugEntity): PublicMug {
   return {
     id: entity.rowKey,
     title: entity.title,
-    type: entity.type,
+    type: entity.type === 'Location' ? 'Places' : entity.type,
     series: entity.series === 'N/A' ? 'N/A' : Number(entity.series),
     ...(entity.additionalInfo && { additionalInfo: entity.additionalInfo }),
     ...(entity.locationName && { locationName: entity.locationName }),

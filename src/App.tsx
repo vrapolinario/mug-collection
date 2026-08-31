@@ -6,7 +6,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import './App.css'
 
-const mugTypes = ['Country', 'State', 'City', 'Location', 'Film', 'Old Collection', 'Special'] as const
+const mugTypes = ['Country', 'State', 'City', 'Places', 'Film', 'Old Collection', 'Special'] as const
 const mugsPerPage = 10
 type MugType = (typeof mugTypes)[number]
 type Mug = { id: string; title: string; type: MugType; series: number | 'N/A'; additionalInfo?: string; locationName?: string; latitude?: number; longitude?: number; primaryImageUrl: string; secondaryImageUrl?: string }

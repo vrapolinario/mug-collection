@@ -16,6 +16,10 @@ type GeocodeResult = { id: string; label: string; latitude: number; longitude: n
 
 const emptyDraft: MugDraft = { title: '', type: 'City', series: '', additionalInfo: '', locationName: '', latitude: '', longitude: '' }
 
+function GitHubIcon() {
+  return <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.23c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.28-5.27-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.47.11-3.05 0 0 .97-.31 3.16 1.18a10.9 10.9 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.58.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.71 5.38-5.29 5.67.42.36.79 1.06.79 2.14v3.26c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z" /></svg>
+}
+
 function CollectionMap({ mugs }: { mugs: Mug[] }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
@@ -175,7 +179,7 @@ function App() {
   function filterByType(type: MugType | 'All') { setTypeFilter(type); setVisibleMugCount(mugsPerPage) }
   async function deleteMug(mug: Mug) { if (!window.confirm(`Remove “${mug.title}” from the collection?`)) return; if ((await fetch(`/api/mugs/${mug.id}`, { method: 'DELETE' })).ok) await loadMugs() }
 
-  return <div className="site-shell"><header className="site-header"><a className="brand" href="#top" aria-label="V and M Coffee Mug Collection home"><span className="brand-mark"><Coffee aria-hidden="true" /></span><span><strong>V&amp;M</strong><small>Coffee Mug Collection</small></span></a><nav aria-label="Main navigation"><a href="#map">Map</a><a href="#collection">Collection</a>{session.authorized ? <><button className="button primary" type="button" onClick={() => setEditingMug(null)}><Plus size={17} /> Add mug</button><a className="icon-button" href="/.auth/logout?post_logout_redirect_uri=/" title="Sign out"><LogOut /></a></> : <a className="button secondary" href="/.auth/login/aad?post_login_redirect_uri=/"><LogIn size={17} /> Admin sign in</a>}</nav></header>
+  return <div className="site-shell"><header className="site-header"><a className="brand" href="#top" aria-label="V and M Coffee Mug Collection home"><span className="brand-mark"><Coffee aria-hidden="true" /></span><span><strong>V&amp;M</strong><small>Coffee Mug Collection</small></span></a><nav aria-label="Main navigation"><a href="#map">Map</a><a href="#collection">Collection</a>{session.authorized ? <><button className="button primary" type="button" onClick={() => setEditingMug(null)}><Plus size={17} /> Add mug</button><a className="icon-button" href="/.auth/logout?post_logout_redirect_uri=/" title="Sign out"><LogOut /></a></> : <a className="button secondary" href="/.auth/login/aad?post_login_redirect_uri=/"><LogIn size={17} /> Admin sign in</a>}<a className="icon-button" href="https://github.com/vrapolinario/mug-collection" target="_blank" rel="noreferrer" title="View source on GitHub" aria-label="View source on GitHub"><GitHubIcon /></a></nav></header>
     <main id="top"><section className="intro-band"><div><p className="eyebrow">An unofficial collector archive</p><h1>Every mug holds<br />a place in our story.</h1><p className="intro-text">A personal catalogue of coffee mugs gathered across countries, cities, films, and special collections.</p><a className="text-link" href="#collection">Browse the collection <ChevronDown size={18} /></a></div><div className="total-lockup" aria-label={`${mugs.length} mugs in the collection`}><span>{mugs.length}</span><p>mugs collected</p></div></section>
     <section className="summary-strip" aria-label="Collection counts by type">{counts.map(({ type, count }) => <button key={type} type="button" onClick={() => filterByType(type)}><span>{count}</span>{type}</button>)}</section>
     <div id="map"><CollectionMap mugs={mugs} /></div>

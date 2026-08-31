@@ -50,13 +50,18 @@ h1 { margin: 0; max-width: 780px; font-size: clamp(48px, 6.5vw, 94px); line-heig
 .mug-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
 .collection-pagination { margin-top: 32px; display: grid; justify-items: center; gap: 8px; color: var(--cp-text-muted); font-size: 13px; }
 .mug-card { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 6px; overflow: hidden; }
+.mug-card-open { width: 100%; padding: 0; display: block; color: inherit; text-align: left; background: transparent; border: 0; font: inherit; cursor: pointer; }
+.mug-card-open:focus-visible { outline: 2px solid var(--cp-accent); outline-offset: -2px; }
 .mug-image { aspect-ratio: 4 / 3; background: var(--cp-surface-soft); overflow: hidden; }
-.mug-image img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.mug-image img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .2s ease; }
+.mug-card-open:hover .mug-image img { transform: scale(1.025); }
+.mug-card-open:hover h3 { color: var(--cp-accent); }
 .mug-card-body { padding: 20px; }
 .mug-meta { display: flex; justify-content: space-between; color: var(--cp-accent); font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .mug-card h3 { margin: 10px 0 8px; font-family: Georgia, 'Times New Roman', serif; font-size: 24px; font-weight: 500; }
 .mug-card p { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--cp-text-muted); font-size: 14px; }
 .card-actions { margin-top: 18px; display: flex; gap: 8px; }
+.mug-card-admin-actions { margin: 0; padding: 0 20px 20px; }
 .status-panel { min-height: 260px; padding: 48px 24px; display: grid; place-content: center; justify-items: center; gap: 10px; color: var(--cp-text-muted); text-align: center; border: 1px dashed var(--cp-border-strong); }
 .status-panel h3 { margin: 8px 0 0; color: var(--cp-text); font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 500; }
 .status-panel p { margin: 0; }
@@ -66,6 +71,19 @@ footer { padding: 48px max(5vw, calc((100vw - 1240px) / 2)); display: grid; grid
 .dialog { width: min(720px, 100%); max-height: calc(100vh - 64px); overflow: auto; background: var(--cp-surface); border: 1px solid var(--cp-border-strong); box-shadow: var(--cp-shadow); }
 .dialog-header { padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--cp-border); }
 .dialog-header h2 { margin: 0; font-size: 34px; }
+.mug-details-dialog { width: min(960px, 100%); }
+.mug-details-gallery { padding: 28px; display: grid; background: var(--cp-bg-elevated); border-bottom: 1px solid var(--cp-border); }
+.mug-details-gallery.has-secondary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.mug-details-gallery figure { min-height: 320px; max-height: 560px; margin: 0; display: grid; place-items: center; background: var(--cp-surface-soft); border: 1px solid var(--cp-border); }
+.mug-details-gallery img { width: 100%; height: 100%; max-height: 560px; display: block; object-fit: contain; }
+.mug-details-content { padding: 28px; display: grid; gap: 28px; }
+.mug-details-content dl { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 32px; }
+.mug-details-content dl > div { display: grid; gap: 5px; }
+.mug-details-content dt { color: var(--cp-accent); font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.mug-details-content dd { margin: 0; display: flex; align-items: center; gap: 6px; color: var(--cp-text); }
+.mug-details-notes { padding-top: 24px; border-top: 1px solid var(--cp-border); }
+.mug-details-notes h3 { margin: 0 0 10px; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 500; }
+.mug-details-notes p { margin: 0; color: var(--cp-text-muted); line-height: 1.7; white-space: pre-wrap; }
 .mug-form { padding: 28px; display: grid; gap: 20px; }
 .mug-form label { display: grid; gap: 7px; color: var(--cp-text); font-size: 13px; font-weight: 700; }
 .mug-form input, .mug-form select, .mug-form textarea { width: 100%; padding: 11px 12px; color: var(--cp-text); background: var(--cp-bg-elevated); border: 1px solid var(--cp-border); border-radius: 4px; font: inherit; font-weight: 400; }
@@ -88,4 +106,4 @@ footer { padding: 48px max(5vw, calc((100vw - 1240px) / 2)); display: grid; grid
 .dialog-actions { padding-top: 8px; display: flex; justify-content: flex-end; gap: 10px; }
 .sr-only { width: 1px; height: 1px; padding: 0; position: absolute; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 900px) { .site-header { padding: 12px 20px; } nav > a:not(.button):not(.icon-button) { display: none; } .intro-band { grid-template-columns: 1fr; padding: 64px 24px 72px; } .total-lockup { width: min(64vw, 280px); } .summary-strip { grid-template-columns: repeat(4, 1fr); } .map-band, .collection-band { padding: 64px 24px; } .map-shell { min-height: 430px; } .mug-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 600px) { .brand small { display: none; } nav { gap: 8px; } nav .button { width: 40px; padding: 0; font-size: 0; } h1 { font-size: 48px; } .summary-strip { grid-template-columns: repeat(2, 1fr); } .section-heading { align-items: start; flex-direction: column; } .collection-tools, .mug-grid, .field-row, .location-search-control, footer { grid-template-columns: 1fr; } .location-search-control .button { width: 100%; } .access-note { grid-column: 1; } .dialog-backdrop { padding: 0; } .dialog { width: 100%; max-height: 100vh; } }
+@media (max-width: 600px) { .brand small { display: none; } nav { gap: 8px; } nav .button { width: 40px; padding: 0; font-size: 0; } h1 { font-size: 48px; } .summary-strip { grid-template-columns: repeat(2, 1fr); } .section-heading { align-items: start; flex-direction: column; } .collection-tools, .mug-grid, .field-row, .location-search-control, footer, .mug-details-gallery.has-secondary, .mug-details-content dl { grid-template-columns: 1fr; } .location-search-control .button { width: 100%; } .access-note { grid-column: 1; } .dialog-backdrop { padding: 0; } .dialog { width: 100%; max-height: 100vh; } .mug-details-gallery { padding: 16px; } .mug-details-gallery figure { min-height: 240px; } }

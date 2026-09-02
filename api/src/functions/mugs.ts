@@ -4,10 +4,15 @@ import { requireAdmin } from '../auth'
 import { mugInputSchema, toPublicMug, type MugEntity } from '../domain'
 import { errorResponse, HttpError, json } from '../http'
 import { deleteImage, downloadImage, uploadImage } from '../images'
-import { getMug, listMugs, removeMug, saveMug } from '../repositories'
+import { createMug as createMugEntity, getMug, getMugCount, listMugs, removeMug, saveMug } from '../repositories'
 
 async function getMugs(): Promise<HttpResponseInit> {
   return json({ items: (await listMugs()).map(toPublicMug) })
+}
+
+async function getCount(): Promise<HttpResponseInit> {
+  try { return json({ count: await getMugCount() }) }
+  catch (error) { return errorResponse(error) }
 }
 
 async function createMug(request: HttpRequest): Promise<HttpResponseInit> {
@@ -25,7 +30,7 @@ async function createMug(request: HttpRequest): Promise<HttpResponseInit> {
       if (secondaryImageName) uploaded.push(secondaryImageName)
       const now = new Date().toISOString()
       const entity: MugEntity = { partitionKey: 'mug', rowKey: randomUUID(), ...input, series: String(input.series), primaryImageName, ...(secondaryImageName && { secondaryImageName }), createdAt: now, updatedAt: now }
-      await saveMug(entity)
+      await createMugEntity(entity)
       return json(toPublicMug(entity), 201)
     } catch (error) { await Promise.allSettled(uploaded.map(deleteImage)); throw error }
   } catch (error) { return errorResponse(error) }
@@ -69,6 +74,7 @@ async function getImage(request: HttpRequest): Promise<HttpResponseInit> {
 }
 
 app.http('listMugs', { methods: ['GET'], route: 'mugs', authLevel: 'anonymous', handler: getMugs })
+app.http('getMugCount', { methods: ['GET'], route: 'mugs/count', authLevel: 'anonymous', handler: getCount })
 app.http('createMug', { methods: ['POST'], route: 'mugs', authLevel: 'anonymous', handler: createMug })
 app.http('updateMug', { methods: ['PUT'], route: 'mugs/{id}', authLevel: 'anonymous', handler: updateMug })
 app.http('deleteMug', { methods: ['DELETE'], route: 'mugs/{id}', authLevel: 'anonymous', handler: deleteMug })

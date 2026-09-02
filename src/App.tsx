@@ -156,6 +156,7 @@ function MugForm({ mug, onClose, onSaved }: { mug?: Mug; onClose: () => void; on
 
 function App() {
   const [mugs, setMugs] = useState<Mug[]>([])
+  const [totalMugCount, setTotalMugCount] = useState(0)
   const [session, setSession] = useState<AdminSession>({ authenticated: false, authorized: false })
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<MugType | 'All'>('All')
@@ -168,15 +169,19 @@ function App() {
 
   async function loadMugs() {
     setLoading(true); setLoadError('')
-    try { const response = await fetch('/api/mugs'); if (!response.ok) throw new Error('The collection is temporarily unavailable.'); setMugs((await response.json()).items) }
+    try { const response = await fetch('/api/mugs'); if (!response.ok) throw new Error('The collection is temporarily unavailable.'); const { items } = await response.json() as { items: Mug[] }; setMugs(items); setTotalMugCount(items.length) }
     catch (error) { setLoadError(error instanceof Error ? error.message : 'The collection is temporarily unavailable.') }
     finally { setLoading(false) }
   }
 
   useEffect(() => {
+    void fetch('/api/mugs/count', { cache: 'no-store' })
+      .then((response) => { if (!response.ok) throw new Error(); return response.json() })
+      .then(({ count }: { count: number }) => setTotalMugCount(count))
+      .catch(() => undefined)
     void fetch('/api/mugs')
       .then((response) => { if (!response.ok) throw new Error('The collection is temporarily unavailable.'); return response.json() })
-      .then(({ items }: { items: Mug[] }) => setMugs(items))
+      .then(({ items }: { items: Mug[] }) => { setMugs(items); setTotalMugCount((current) => current || items.length) })
       .catch((error: unknown) => setLoadError(error instanceof Error ? error.message : 'The collection is temporarily unavailable.'))
       .finally(() => setLoading(false))
     void fetch('/api/management/session', { cache: 'no-store' })
@@ -191,7 +196,7 @@ function App() {
   async function deleteMug(mug: Mug) { if (!window.confirm(`Remove “${mug.title}” from the collection?`)) return; if ((await fetch(`/api/mugs/${mug.id}`, { method: 'DELETE' })).ok) await loadMugs() }
 
   return <div className="site-shell"><header className="site-header"><a className="brand" href="#top" aria-label="V and M Coffee Mug Collection home"><span className="brand-mark"><Coffee aria-hidden="true" /></span><span><strong>V&amp;M</strong><small>Coffee Mug Collection</small></span></a><nav aria-label="Main navigation"><a href="#map">Map</a><a href="#collection">Collection</a>{session.authorized ? <><button className="button primary" type="button" onClick={() => setEditingMug(null)}><Plus size={17} /> Add mug</button><a className="icon-button" href="/.auth/logout?post_logout_redirect_uri=/" title="Sign out"><LogOut /></a></> : <a className="button secondary" href="/.auth/login/aad?post_login_redirect_uri=/"><LogIn size={17} /> Admin sign in</a>}<a className="icon-button" href="https://github.com/vrapolinario/mug-collection" target="_blank" rel="noreferrer" title="View source on GitHub" aria-label="View source on GitHub"><GitHubIcon /></a></nav></header>
-    <main id="top"><section className="intro-band"><div><p className="eyebrow">An unofficial collector archive</p><h1>Every mug holds<br />a place in our story.</h1><p className="intro-text">A personal catalogue of coffee mugs gathered across countries, cities, films, and special collections.</p><a className="text-link" href="#collection">Browse the collection <ChevronDown size={18} /></a></div><div className="total-lockup" aria-label={`${mugs.length} mugs in the collection`}><span>{mugs.length}</span><p>mugs collected</p></div></section>
+    <main id="top"><section className="intro-band"><div><p className="eyebrow">An unofficial collector archive</p><h1>Every mug holds<br />a place in our story.</h1><p className="intro-text">A personal catalogue of coffee mugs gathered across countries, cities, films, and special collections.</p><a className="text-link" href="#collection">Browse the collection <ChevronDown size={18} /></a></div><div className="total-lockup" aria-label={`${totalMugCount} mugs in the collection`}><span>{totalMugCount}</span><p>mugs collected</p></div></section>
     <section className="summary-strip" aria-label="Collection counts by type">{counts.map(({ type, count }) => <button key={type} type="button" onClick={() => filterByType(type)}><span>{count}</span>{type}</button>)}</section>
     <div id="map"><CollectionMap mugs={mugs} /></div>
     <section className="collection-band" id="collection" aria-labelledby="collection-heading"><div className="section-heading"><div><p className="eyebrow">The cabinet</p><h2 id="collection-heading">The collection</h2></div><p>{filteredMugs.length} of {mugs.length} mugs</p></div><div className="collection-tools"><label className="search-box"><Search size={18} /><span className="sr-only">Search collection</span><input type="search" placeholder="Search mugs or places" value={query} onChange={(event) => { setQuery(event.target.value); setVisibleMugCount(mugsPerPage) }} /></label><label className="select-box"><Filter size={17} /><span className="sr-only">Filter by type</span><select value={typeFilter} onChange={(event) => filterByType(event.target.value as MugType | 'All')}><option>All</option>{mugTypes.map((type) => <option key={type}>{type}</option>)}</select></label></div>
